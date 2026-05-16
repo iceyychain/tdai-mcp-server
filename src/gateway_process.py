@@ -140,13 +140,42 @@ class GatewayProcess:
             pkg_dir = Path(self._package_path).resolve()
             server_ts = pkg_dir / "src" / "gateway" / "server.ts"
             if server_ts.exists():
+                tsx_bin = pkg_dir / "node_modules" / "tsx" / "dist" / "cli.mjs"
+                if tsx_bin.exists():
+                    return ("node", [str(tsx_bin), str(server_ts)])
                 return ("npx", ["tsx", str(server_ts)])
 
-        return ("npx", [
-            "--yes",
-            "@tencentdb-agent-memory/memory-tencentdb",
-            "gateway",
-        ])
+        # The npm package does not have a 'gateway' CLI command.
+        # Run directly with tsx from the globally installed package.
+        # Resolve global npm root dynamically (cross-platform).
+        global_npm_root = self._resolve_global_npm_root()
+        if global_npm_root:
+            pkg_dir = global_npm_root / "@tencentdb-agent-memory" / "memory-tencentdb"
+            server_ts = pkg_dir / "src" / "gateway" / "server.ts"
+            if server_ts.exists():
+                tsx_bin = pkg_dir / "node_modules" / "tsx" / "dist" / "cli.mjs"
+                if tsx_bin.exists():
+                    return ("node", [str(tsx_bin), str(server_ts)])
+                return ("npx", ["tsx", str(server_ts)])
+
+        # Fallback: try to find via npx
+        return ("npx", ["tsx", "@tencentdb-agent-memory/memory-tencentdb/src/gateway/server.ts"])
+
+    @staticmethod
+    def _resolve_global_npm_root() -> Path | None:
+        """Resolve the global npm root directory (cross-platform)."""
+        try:
+            result = subprocess.run(
+                ["npm", "root", "-g"],
+                capture_output=True, text=True, timeout=10.0,
+            )
+            if result.returncode == 0:
+                path = result.stdout.strip()
+                if path:
+                    return Path(path)
+        except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+            pass
+        return None
 
     def _build_env(self) -> dict[str, str]:
         env: dict[str, str] = {

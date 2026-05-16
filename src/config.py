@@ -38,11 +38,11 @@ def load_config() -> TdaiConfig:
         store_backend=os.environ.get("TDAI_STORE_BACKEND", "sqlite"),
         recall_strategy=os.environ.get("TDAI_RECALL_STRATEGY", "hybrid"),
         recall_max_results=int(os.environ.get("TDAI_RECALL_MAX_RESULTS", "5")),
-        llm_api_key=os.environ.get("LLM_API_KEY"),
+        llm_api_key=os.environ.get("LLM_API_KEY") or os.environ.get("TDAI_LLM_API_KEY"),
         llm_base_url=os.environ.get(
-            "LLM_BASE_URL", "https://api.lkeap.cloud.tencent.com/v1"
-        ),
-        llm_model=os.environ.get("LLM_MODEL", "deepseek-v3.2"),
+            "LLM_BASE_URL",
+        ) or os.environ.get("TDAI_LLM_BASE_URL", "https://api.lkeap.cloud.tencent.com/v1"),
+        llm_model=os.environ.get("LLM_MODEL") or os.environ.get("TDAI_LLM_MODEL", "deepseek-v3.2"),
         mcp_transport=os.environ.get("MCP_TRANSPORT", "stdio"),
         mcp_host=os.environ.get("MCP_HOST", "127.0.0.1"),
         mcp_port=int(os.environ.get("MCP_PORT", "8421")),
